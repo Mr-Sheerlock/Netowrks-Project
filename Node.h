@@ -3,15 +3,15 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+//
 
 #ifndef __NETWORKPROJECT_NODE_H_
 #define __NETWORKPROJECT_NODE_H_
@@ -20,14 +20,16 @@
 #include <iostream>
 #include <vector>
 #include <bitset>
-#include<stdio.h>
+#include <stdio.h>
 #include <string>
+#include <fstream>
 using std::bitset;
-using std::string;
-using std::vector;
 using std::cin;
 using std::cout;
+using std::fstream;
+using std::string;
 using std::to_string;
+using std::vector;
 #include "CustomMsg_m.h"
 using namespace omnetpp;
 
@@ -36,9 +38,16 @@ using namespace omnetpp;
  */
 class Node : public cSimpleModule
 {
-  protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+  char id;
+  fstream DataFile;
+  string DataPath;
+  string Errorbits;
+  string MsgContent;
+
+protected:
+  virtual void initialize();
+  virtual void handleMessage(cMessage *msg);
+  void ReadLine();
 };
 
 #endif

@@ -19,7 +19,7 @@
 
 
 /**
- * Class generated from <tt>CustomMsg.msg:21</tt> by nedtool.
+ * Class generated from <tt>CustomMsg.msg:20</tt> by nedtool.
  * <pre>
  * //
  * // TODO generated message class

@@ -17,7 +17,13 @@
 #define __NETWORKPROJECT_COORDINATOR_H_
 
 #include <omnetpp.h>
-
+#include<stdio.h>
+#include <string>
+#include <fstream>
+using std::fstream;
+using std::string;
+using std::to_string;
+using std::cout;
 using namespace omnetpp;
 
 /**
