@@ -29,7 +29,13 @@ class Node : public cSimpleModule
   string DataPath;
   string Errorbits;
   string MsgContent;
-
+  int WS;
+  float TO; 
+  float PT;
+  float TD;
+  float ED;
+  float DD;
+  float LP;
 protected:
   virtual void initialize();
   virtual void handleMessage(cMessage *msg);
