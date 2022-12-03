@@ -6,6 +6,7 @@ package networkproject;
 //
 network Network
 {
+       
     @display("bgb=425,329");
     submodules:
         coordinator: Coordinator {
