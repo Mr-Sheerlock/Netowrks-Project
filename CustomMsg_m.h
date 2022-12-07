@@ -30,7 +30,7 @@
  *     string M_Payload;
  *     char M_Trailer;
  *     int M_FrameType;
- *     int M_Ack;
+ *     int M_Ack; //1 for ack, 0 for nack
  * 
  * }
  * </pre>

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string>
 #include <fstream>
+#include <unistd.h>
 using std::bitset;
 using std::cin;
 using std::cout;
@@ -16,6 +17,7 @@ using std::fstream;
 using std::string;
 using std::to_string;
 using std::vector;
+using std::fixed;
 #include "CustomMsg_m.h"
 using namespace omnetpp;
 
@@ -27,8 +29,11 @@ class Node : public cSimpleModule
   char id;
   fstream DataFile;
   string DataPath;
-  string Errorbits;
-  string MsgContent;
+  fstream OutFile;
+  vector<string> Messages;
+  // string MsgContent; // consider changing this  to vector?
+  vector<bitset<4>> Errorbits;
+  // bitset<4> ErrorBits; //consider changing this to vecotr ?
   int WS;
   float TO; 
   float PT;
@@ -39,7 +44,9 @@ class Node : public cSimpleModule
 protected:
   virtual void initialize();
   virtual void handleMessage(cMessage *msg);
-  void ReadLine();
+  void ReadFile();
+  void ErrSend(string Message,bitset<4> ErrBits,bool dupdelaytime);
+  
 };
 
 #endif
