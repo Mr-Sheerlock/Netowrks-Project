@@ -3,7 +3,6 @@
 Define_Module(Node);
 
 
-
 char GetParityByte(string Payload)
 {
     int PayloadLength = Payload.size();
