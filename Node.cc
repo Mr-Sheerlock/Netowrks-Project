@@ -2,6 +2,53 @@
 
 Define_Module(Node);
 
+
+char GetParityByte(string Payload)
+{
+    int PayloadLength = Payload.size();
+    vector<std::bitset<8> > CharVec(PayloadLength);
+    //Add character bytes in the vector
+    for(int i = 0; i < PayloadLength; i++)
+    {
+        bitset<8> CurrentChar(Payload[i]);
+        CharVec[i] = CurrentChar;
+    }
+    //First set the parity as the first character in the vector
+    bitset<8> Parity = CharVec[0];
+
+    //loop to calculate the parity byte
+    for(int i = 1; i < PayloadLength; i++)
+    {
+        Parity = Parity ^ CharVec[i];
+    }
+    return (char)Parity.to_ulong();
+}
+
+bool CheckError(string Payload ,char ParityByte)
+{
+    bitset<8> ReceivedParity(ParityByte);
+    int PayloadLength = Payload.size();
+    vector<std::bitset<8> > CharVec(PayloadLength);
+    //Add character bytes in the vector
+    for(int i = 0; i < PayloadLength; i++)
+    {
+        bitset<8> CurrentChar(Payload[i]);
+        CharVec[i] = CurrentChar;
+    }
+    //First set the parity as the first character in the vector
+    bitset<8> CalculatedParity = CharVec[0];
+    //loop to calculate the parity byte
+    for(int i = 1; i < PayloadLength; i++)
+    {
+        CalculatedParity = CalculatedParity ^ CharVec[i];
+    }
+    if(CalculatedParity == ReceivedParity)
+    {
+        return true;
+    }
+    return false;
+}
+
 //for debugging purposes later
 bitset<4> reverseBitset(bitset<4> mybits)
 {
