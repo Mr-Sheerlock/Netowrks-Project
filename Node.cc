@@ -2,6 +2,54 @@
 
 Define_Module(Node);
 
+
+
+char GetParityByte(string Payload)
+{
+    int PayloadLength = Payload.size();
+    vector<std::bitset<8> > CharVec(PayloadLength);
+    //Add character bytes in the vector
+    for(int i = 0; i < PayloadLength; i++)
+    {
+        bitset<8> CurrentChar(Payload[i]);
+        CharVec[i] = CurrentChar;
+    }
+    //First set the parity as the first character in the vector
+    bitset<8> Parity = CharVec[0];
+
+    //loop to calculate the parity byte
+    for(int i = 1; i < PayloadLength; i++)
+    {
+        Parity = Parity ^ CharVec[i];
+    }
+    return (char)Parity.to_ulong();
+}
+
+bool CheckError(string Payload ,char ParityByte)
+{
+    bitset<8> ReceivedParity(ParityByte);
+    int PayloadLength = Payload.size();
+    vector<std::bitset<8> > CharVec(PayloadLength);
+    //Add character bytes in the vector
+    for(int i = 0; i < PayloadLength; i++)
+    {
+        bitset<8> CurrentChar(Payload[i]);
+        CharVec[i] = CurrentChar;
+    }
+    //First set the parity as the first character in the vector
+    bitset<8> CalculatedParity = CharVec[0];
+    //loop to calculate the parity byte
+    for(int i = 1; i < PayloadLength; i++)
+    {
+        CalculatedParity = CalculatedParity ^ CharVec[i];
+    }
+    if(CalculatedParity == ReceivedParity)
+    {
+        return true;
+    }
+    return false;
+}
+
 //for debugging purposes later
 bitset<4> reverseBitset(bitset<4> mybits)
 {
@@ -13,24 +61,86 @@ bitset<4> reverseBitset(bitset<4> mybits)
     return res;
 }
 
+
+void Node::LogRead(bitset<4> const &errorbits){
+    string out;
+    OutFile.open("output.txt",std::ios_base::app);
+    double now= simTime().dbl();
+    out= "At time ";
+    OutFile.precision(3);
+    OutFile<<out <<fixed<<now;
+    out=" Node";out+=id;out+=" , Introducing error with code= " +errorbits.to_string();
+    OutFile<<out<<endl;
+    OutFile.close();
+}
+
+
+void Node::LogTransmissionOrRecieval(bool Transmitting,int seq_num, string payload, char Trailer,int Modified=-1, bool Lost=0,int Duplicate=0, int delay=0){
+    
+    string out,temp; bitset<8> trailer(Trailer);
+    OutFile.open("output.txt",std::ios_base::app);
+    double now= simTime().dbl();
+    out= "At time ";
+    OutFile.precision(3);
+    OutFile<<out <<fixed<<now;
+    temp = Transmitting ? "sent" : "received";
+    out=" Node";out+=id;out+=" , "+temp +" frame with seq_num= "+ to_string(seq_num);
+    out+=" and payload= "+payload; out+=" and trailer= " +trailer.to_string();
+    out+=" , Modified " + to_string(Modified); 
+    temp= Lost? "Yes" : "No";
+    out+=" , Lost " + temp; out+=", Duplicate "+ to_string(Duplicate); 
+    out+=" , Delay " + to_string(delay);
+    OutFile<<out<<endl;
+    OutFile.close();
+}
+
+void Node::LogTimeout(int seq_num){
+
+    string out;
+    OutFile.open("output.txt",std::ios_base::app);
+    double now= simTime().dbl();
+    out= "Timeout event at time ";
+    OutFile.precision(3);
+    OutFile<<out <<fixed<<now;
+    out=" at Node";out+=id;out+=" for frame with seq_num= "+ to_string(seq_num);
+    OutFile<<out<<endl;
+    OutFile.close();
+}
+
+void Node::LogControl(int seq_num,bool Ack=1, bool Lost=0){
+    
+//     At time[.. starting sending time after processing….. ], Node[id] Sending [ACK/NACK] with 
+// number […] , loss [Yes/No ]
+
+    string out,temp;
+    OutFile.open("output.txt",std::ios_base::app);
+    double now= simTime().dbl();
+    out= "At time ";
+    OutFile.precision(3);
+    OutFile<<out <<fixed<<now;
+    temp = Ack ? "ACK" : "NACK";
+    out=" Node";out+=id;out+=", Sending "+ temp;
+    out+=" with number "+to_string(seq_num);
+    temp= Lost? "Yes" : "No";
+    out+=" , loss " + temp;
+    OutFile<<out<<endl;
+    OutFile.close();
+}
+
+
 void Node::ReadFile()
 {
-    string temp, err, msg ,out;
+    string temp, err, msg;
     DataFile.open(DataPath.c_str(), std::ios_base::in);
-    OutFile.open("output.txt",std::ios_base::out);
+    
     while (getline(DataFile, temp))
     {
         err = temp.substr(0, 4);
         bitset<4> errorbits = bitset<4>(err);
         msg = temp.substr(4);
 
-        double now= simTime().dbl();
-        out= "At time ";
-        OutFile.precision(3);
-        OutFile<<out <<fixed<<now;
-        out=" Node";out+=id;out+=" , Introducing error with code= " +errorbits.to_string();
-        OutFile<<out<<endl;
-        
+        //we can put this part in a function and call them whenever we like 
+        LogRead(errorbits);
         Messages.push_back(msg);
         Errorbits.push_back(errorbits);
     }
@@ -58,10 +168,14 @@ void Node::ErrSend(string Message, bitset<4> ErrBits, bool dupdelaytime = 0)
         delay += ED;
     }
     // TODO: Send and Print the message
+    
 }
 
 void Node::initialize()
 {
+    //clear the output file
+    OutFile.open("output.txt",std::ios_base::out);
+    OutFile.close();
     WS = par("WS").intValue();
     TO = par("TO").doubleValue();
     PT = par("PT").doubleValue();
@@ -84,6 +198,7 @@ void Node::handleMessage(cMessage *msg)
     {
         // coordinator's first move
         ReadFile();
+        //IMPORTANT TODO:send something to the other node
         return;
     }
     // other node
@@ -98,7 +213,9 @@ void Node::handleMessage(cMessage *msg)
         else
         {
             //nack
-
         }
+        return;
     }
+    //Message
+    
 }

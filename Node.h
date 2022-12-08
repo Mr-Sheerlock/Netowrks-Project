@@ -46,7 +46,10 @@ protected:
   virtual void handleMessage(cMessage *msg);
   void ReadFile();
   void ErrSend(string Message,bitset<4> ErrBits,bool dupdelaytime);
-  
+  void LogRead(bitset<4> const &errorbits); // Logs Reading Action
+  void LogTransmissionOrRecieval(bool Transmitting,int seq_num, string payload, char Trailer,int Modified, bool Lost,int Duplicate, int delay);
+  void LogTimeout(int seq_num);
+  void LogControl(int seq_num,bool Ack, bool Lost);
 };
 
 #endif
