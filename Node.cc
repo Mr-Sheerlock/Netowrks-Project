@@ -154,11 +154,11 @@ void Node::ReadFile()
     DataFile.close();
 }
 
-void Node::SendData(float delay, int modify, bool lost, int duplicate)
+void Node::SendData(string Msgg, float delay, int modify, bool lost, int duplicate)
 {
     CustomMsg *msg = new CustomMsg();
     msg->setM_Header(next_frame_to_Send);
-    string Msgg=Messages[nFramesAcked + next_frame_to_Send];
+//    string Msgg=Messages[nFramesAcked + next_frame_to_Send];
     msg->setM_Payload(Msgg.c_str());
     msg->setM_Trailer(GetParityByte(Messages[nFramesAcked + next_frame_to_Send]));
     msg->setM_FrameType(0);
@@ -180,8 +180,11 @@ void Node::SendData(float delay, int modify, bool lost, int duplicate)
 void Node::ErrSend(string Message, bitset<4> ErrBits, bool dupdelaytime = 0)
 {
     float delay = PT + TD;
-    int modify = -1;
-    int duplicate = 0;
+    int modify = -1;        // variable used for printing purposes
+    int duplicate = 0;      // variable used for printing purposes
+    string Msgg=Messages[nFramesAcked + next_frame_to_Send];        // Fetches message from vector
+    FramingMsg(Msgg);           // Applies byte stuffing
+
     if (dupdelaytime)
     {
         delay += DD;
@@ -191,29 +194,29 @@ void Node::ErrSend(string Message, bitset<4> ErrBits, bool dupdelaytime = 0)
     // if (ErrBits[2])
     //     return; // loss, do nothing // You might also want to modify the function to reutrn false
     if (ErrBits[1])
-    {                   // duplication
-        ErrBits[1] = 0; // how to print duplicate ?
-        duplicate;
+    {   // duplication
+        ErrBits[1] = 0;
+        duplicate = 1;
         ErrSend(Message, ErrBits, 1);
     }
     if (ErrBits[3])
-    { // call modify IMPORTANT: modify must return the
-//       modify = ModifyMsg();
+    {  // call modify IMPORTANT: modify must return the index of modified bit
+       modify = ModifyMsg(Msgg);
     }
     if (ErrBits[0])
     { // change delay variable
         delay += ED;
     }
-    // TODO: Send and Print the message
-    SendData(delay, modify, ErrBits[2], duplicate);
+
+    SendData(Msgg, delay, modify, ErrBits[2], duplicate);
 }
 
-int Node::ModifyMsg(CustomMsg *&msg)
+int Node::ModifyMsg(string& Payload)
 {
 //    cout << "ModifyMSG Function Called" << endl;
 //    cout << "Msg payload content: " << endl << msg->getM_Payload() << endl;
 
-    string Payload = msg->getM_Payload();   // returns payload from the custom message
+//    string Payload = msg->getM_Payload();   // returns payload from the custom message
 
 //    cout << "String Payload: " << endl << Payload << endl;
 
@@ -266,16 +269,16 @@ int Node::ModifyMsg(CustomMsg *&msg)
 //    cout << "Modified Byte: " << ModifiedByte << ", Modified Bit: " << ModifiedBit << endl;
 //    cout << "Returned value: " << ModifiedByte * 8 + ModifiedBit << endl;
 
-    msg->setM_Payload(Payload.c_str());     // updating message payload
+//    msg->setM_Payload(Payload.c_str());     // updating message payload
 
 //    cout << "Msg payload: " << endl << msg->getM_Payload() << endl;
 
     return ModifiedByte * 8 + ModifiedBit;
 }
 
-void Node::FramingMsg(CustomMsg *&msg)
+void Node::FramingMsg(string &Payload)
 {
-    string Payload = msg->getM_Payload();
+//    string Payload = msg->getM_Payload();
     string ModifiedPayload = "";
 
     for(int i = 0; i < Payload.size(); ++i)
@@ -287,7 +290,8 @@ void Node::FramingMsg(CustomMsg *&msg)
         ModifiedPayload.push_back(Payload[i]);      // appending the next character
     }
 
-    msg->setM_Payload(ModifiedPayload.c_str());     // updating the message payload
+    Payload = ModifiedPayload;
+//    msg->setM_Payload(ModifiedPayload.c_str());     // updating the message payload
 }
 
 void Node::initialize()
@@ -322,12 +326,15 @@ void Node::handleMessage(cMessage *msg)
     {
 
         // Used to test Modify function
-//        CustomMsg *TestMsg = new CustomMsg();
-//        TestMsg->setM_Payload("Resala taweela naw3an ma. bs 5leena brdo ngrb n5leeha atwal 7aba kaman. eih el moshkela y3ny");
-//        ModifyMsg(TestMsg);
-//        TestMsg->setM_Payload("$lol$//$ eih /$ el$ de$7/k dh x/D$/");
-//        FramingMsg(TestMsg);
-//        cout << TestMsg->getM_Payload() << endl;
+
+//        string Payload = "$lol$//$ eih /$ el$ de$7/k dh x/D$/";
+//        FramingMsg(Payload);
+//        cout << Payload << endl;
+//
+//        Payload = "Resala taweela naw3an ma. bs 5leena brdo ngrb n5leeha atwal 7aba kaman. eih el moshkela y3ny";
+//        ModifyMsg(Payload);
+//        cout << Payload << endl;
+
 
 
         // coordinator's first move
