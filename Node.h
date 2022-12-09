@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string>
 #include <fstream>
+#include <cmath>        // included to use pow function
 #include <unistd.h>
 using std::bitset;
 using std::cin;
@@ -54,6 +55,7 @@ protected:
   virtual void handleMessage(cMessage *msg);
   void ReadFile();
   void ErrSend(string Message,bitset<4> ErrBits,bool dupdelaytime);
+  int ModifyMsg(CustomMsg *&msg);                          // Modifies the message by adding an error to the payload. It also return the index of modified bit
   void LogRead(bitset<4> const &errorbits); // Logs Reading Action
   void LogTransmissionOrRecieval(bool Transmitting,int seq_num, string payload, char Trailer,int Modified, bool Lost,int Duplicate, int delay);
   void LogTimeout(int seq_num);

@@ -198,7 +198,7 @@ void Node::ErrSend(string Message, bitset<4> ErrBits, bool dupdelaytime = 0)
     }
     if (ErrBits[3])
     { // call modify IMPORTANT: modify must return the
-      // modify = ;
+//       modify = ModifyMsg();
     }
     if (ErrBits[0])
     { // change delay variable
@@ -206,6 +206,71 @@ void Node::ErrSend(string Message, bitset<4> ErrBits, bool dupdelaytime = 0)
     }
     // TODO: Send and Print the message
     SendData(delay, modify, ErrBits[2], duplicate);
+}
+
+int Node::ModifyMsg(CustomMsg *&msg)
+{
+//    cout << "ModifyMSG Function Called" << endl;
+//    cout << "Msg payload content: " << endl << msg->getM_Payload() << endl;
+
+    string Payload = msg->getM_Payload();   // returns payload from the custom message
+
+//    cout << "String Payload: " << endl << Payload << endl;
+
+    // We now need to convert the string into bitset
+
+    vector<bitset<8> > Vmsg (Payload.size());       // Vector containing the bitset of each char in the payload
+
+//    cout << "Bitset vector: " << endl;
+
+    // Filling the vector
+    for(int i=0; i < Payload.size(); ++i)
+    {
+        bitset<8> CharPayload(Payload[i]);          // bitset of one char from the payload
+        Vmsg[i] = CharPayload;                      // The MSB has index 0, LSB has index size-1
+
+//        cout << Vmsg[i];
+    }
+
+//    cout << endl;
+
+    // Now, we want to modify the payload by inverting any 1 bit from it
+    int ModifiedByte = uniform(0, 1) * Payload.size();  // generates a random integer between 0 and size-1 inclusive
+                                                        // This is the char that will be modified
+    int ModifiedBit = uniform(0, 1) * 7;                // This is the bit that will be modified in that char (0 indexing is used)
+    bitset<8> error(128 / pow(2, ModifiedBit));
+    // 2^0 = 0000 0001
+    // 2^1 = 0000 0010
+    // 2^2 = 0000 0100
+    //
+    // 2^7 = 1000 0000
+    // 128 divided pow will reverse the indexing order, such that if the ModifiedBit = 0
+    // the first element (index 0, or MSB) will be modified
+
+    Vmsg[ModifiedByte] = Vmsg[ModifiedByte] ^ error;    // modifying that bit
+
+//    cout << "Modified Bitset vector: " << endl;
+
+    // Now, Vmsg contains the modified payload, we need to update the
+    // CustomMessage's payload
+    for(int i = 0; i < Payload.size(); ++i)
+    {
+        Payload[i] = (char)Vmsg[i].to_ulong();
+
+//        cout << Vmsg[i];
+    }
+
+//    cout << endl;
+
+//    cout << "String Payload after modification: " << endl << Payload << endl;
+//    cout << "Modified Byte: " << ModifiedByte << ", Modified Bit: " << ModifiedBit << endl;
+//    cout << "Returned value: " << ModifiedByte * 8 + ModifiedBit << endl;
+
+    msg->setM_Payload(Payload.c_str());
+
+//    cout << "Msg payload: " << endl << msg->getM_Payload() << endl;
+
+    return ModifiedByte * 8 + ModifiedBit;
 }
 
 void Node::initialize()
@@ -238,6 +303,13 @@ void Node::handleMessage(cMessage *msg)
     CustomMsg *packet = dynamic_cast<CustomMsg *>(msg);
     if (packet == nullptr)
     {
+
+        // Used to test Modify function
+//        CustomMsg *TestMsg = new CustomMsg();
+//        TestMsg->setM_Payload("Resala taweela naw3an ma. bs 5leena brdo ngrb n5leeha atwal 7aba kaman. eih el moshkela y3ny");
+//        ModifyMsg(TestMsg);
+
+
         // coordinator's first move
         ReadFile();
         // IMPORTANT TODO:send something to the other node
