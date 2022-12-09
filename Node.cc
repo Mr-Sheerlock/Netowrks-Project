@@ -167,6 +167,10 @@ void Node::SendData(float delay, int modify, bool lost, int duplicate)
         return;
 
     scheduleAt(simTime() + delay, msg);
+    Timeouts[next_frame_to_Send]= new CustomMsg();
+    timeout->setM_Header(Timeouts[next_frame_to_Send]);
+    scheduleAt(simTime()+PT+TO, Timeouts[next_frame_to_Send]);
+    
 }
 
 // IMPORTANT NOTE: If bits are 1010, then bits[0]=0, bits[1]=1.... etc ie. bit[x] x starts from the least significant bit
