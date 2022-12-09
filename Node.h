@@ -41,6 +41,14 @@ class Node : public cSimpleModule
   float ED;
   float DD;
   float LP;
+
+
+  vector<CustomMsg*> Timeouts;
+  // CustomMsg * timeout;
+  int next_frame_to_Send;
+  int nBuffered; // no. of frames in the buffer
+  int nFramesAcked; // number of frames acked in the right order so far 
+
 protected:
   virtual void initialize();
   virtual void handleMessage(cMessage *msg);
@@ -50,6 +58,7 @@ protected:
   void LogTransmissionOrRecieval(bool Transmitting,int seq_num, string payload, char Trailer,int Modified, bool Lost,int Duplicate, int delay);
   void LogTimeout(int seq_num);
   void LogControl(int seq_num,bool Ack, bool Lost);
+  void SendData(float delay, int modify,bool lost,int duplicate);
 };
 
 #endif
