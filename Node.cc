@@ -266,11 +266,28 @@ int Node::ModifyMsg(CustomMsg *&msg)
 //    cout << "Modified Byte: " << ModifiedByte << ", Modified Bit: " << ModifiedBit << endl;
 //    cout << "Returned value: " << ModifiedByte * 8 + ModifiedBit << endl;
 
-    msg->setM_Payload(Payload.c_str());
+    msg->setM_Payload(Payload.c_str());     // updating message payload
 
 //    cout << "Msg payload: " << endl << msg->getM_Payload() << endl;
 
     return ModifiedByte * 8 + ModifiedBit;
+}
+
+void Node::FramingMsg(CustomMsg *&msg)
+{
+    string Payload = msg->getM_Payload();
+    string ModifiedPayload = "";
+
+    for(int i = 0; i < Payload.size(); ++i)
+    {
+        if(Payload[i] == '$' || Payload[i] == '/')  // We need to add a '/' before the character
+        {
+            ModifiedPayload.push_back('/');         // appending a '/' to the end of the string
+        }
+        ModifiedPayload.push_back(Payload[i]);      // appending the next character
+    }
+
+    msg->setM_Payload(ModifiedPayload.c_str());     // updating the message payload
 }
 
 void Node::initialize()
@@ -308,6 +325,9 @@ void Node::handleMessage(cMessage *msg)
 //        CustomMsg *TestMsg = new CustomMsg();
 //        TestMsg->setM_Payload("Resala taweela naw3an ma. bs 5leena brdo ngrb n5leeha atwal 7aba kaman. eih el moshkela y3ny");
 //        ModifyMsg(TestMsg);
+//        TestMsg->setM_Payload("$lol$//$ eih /$ el$ de$7/k dh x/D$/");
+//        FramingMsg(TestMsg);
+//        cout << TestMsg->getM_Payload() << endl;
 
 
         // coordinator's first move

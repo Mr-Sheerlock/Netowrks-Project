@@ -53,14 +53,20 @@ class Node : public cSimpleModule
 protected:
   virtual void initialize();
   virtual void handleMessage(cMessage *msg);
+
   void ReadFile();
+
   void ErrSend(string Message,bitset<4> ErrBits,bool dupdelaytime);
   int ModifyMsg(CustomMsg *&msg);                          // Modifies the message by adding an error to the payload. It also return the index of modified bit
+
   void LogRead(bitset<4> const &errorbits); // Logs Reading Action
   void LogTransmissionOrRecieval(bool Transmitting,int seq_num, string payload, char Trailer,int Modified, bool Lost,int Duplicate, int delay);
   void LogTimeout(int seq_num);
   void LogControl(int seq_num,bool Ack, bool Lost);
+
   void SendData(float delay, int modify,bool lost,int duplicate);
+  void FramingMsg(CustomMsg *&msg);         // Applies byte stuffing to payload of msg
+
   void inc(int &num);
 };
 
