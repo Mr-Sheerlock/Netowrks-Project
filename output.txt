@@ -1,2 +1,0 @@
-At time 2.000 Node0 , Introducing error with code= 0010
-At time 2.000 Node0 , Introducing error with code= 1101

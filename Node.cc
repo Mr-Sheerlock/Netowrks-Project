@@ -158,7 +158,8 @@ void Node::SendData(float delay, int modify, bool lost, int duplicate)
 {
     CustomMsg *msg = new CustomMsg();
     msg->setM_Header(next_frame_to_Send);
-    msg->setM_Payload(Messages[nFramesAcked + next_frame_to_Send]);
+    string Msgg=Messages[nFramesAcked + next_frame_to_Send];
+    msg->setM_Payload(Msgg.c_str());
     msg->setM_Trailer(GetParityByte(Messages[nFramesAcked + next_frame_to_Send]));
     msg->setM_FrameType(0);
     LogTransmissionOrRecieval(1, next_frame_to_Send, Messages[nFramesAcked + next_frame_to_Send], msg->getM_Trailer(),
@@ -168,8 +169,9 @@ void Node::SendData(float delay, int modify, bool lost, int duplicate)
 
     scheduleAt(simTime() + delay, msg);
     Timeouts[next_frame_to_Send]= new CustomMsg();
-    timeout->setM_Header(Timeouts[next_frame_to_Send]);
-    scheduleAt(simTime()+PT+TO, Timeouts[next_frame_to_Send]);
+    CustomMsg* timeout=Timeouts[next_frame_to_Send];
+    timeout->setM_Header(next_frame_to_Send);
+    scheduleAt(simTime()+PT+TO, timeout);
     
 }
 
@@ -225,7 +227,7 @@ void Node::initialize()
     Timeouts = vector<CustomMsg *>(WS + 1, NULL);
 }
 
-void inc(int &seq_num)
+void Node::inc(int &seq_num)
 {
     seq_num = (seq_num + 1) % (WS + 1);
 }

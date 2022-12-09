@@ -59,6 +59,7 @@ protected:
   void LogTimeout(int seq_num);
   void LogControl(int seq_num,bool Ack, bool Lost);
   void SendData(float delay, int modify,bool lost,int duplicate);
+  void inc(int &num);
 };
 
 #endif
