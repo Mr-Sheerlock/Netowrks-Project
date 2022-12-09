@@ -26,11 +26,11 @@
  * //
  * packet CustomMsg
  * {
- *     int M_Header;
+ *     int M_Header;  //\@sender 0 for Timeout, 1 for Processing Finished
  *     string M_Payload;
  *     char M_Trailer;
- *     int M_FrameType;
- *     int M_Ack; //1 for ack, 0 for nack , 2 for Timeout
+ *     int M_FrameType; //Data=0/ACK=1 /NACK=2.
+ *     int M_Ack; //1 for ack, 0 for nack 
  * 
  * }
  * </pre>

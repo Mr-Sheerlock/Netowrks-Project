@@ -46,17 +46,18 @@ class Node : public cSimpleModule
 
   vector<CustomMsg*> Timeouts;
   // CustomMsg * timeout;
-  int next_frame_to_Send;
+  int next_frame_to_Send; //seqnum
   int nBuffered; // no. of frames in the buffer
   int nFramesAcked; // number of frames acked in the right order so far 
-
+  int frame_expected; //seqnum
+  int Msgsread;
 protected:
   virtual void initialize();
   virtual void handleMessage(cMessage *msg);
 
   void ReadFile();
 
-  void ErrSend(string Message,bitset<4> ErrBits,bool dupdelaytime);
+  void ErrSend(bool dupdelaytime);
   int ModifyMsg(string &Payload);               // Modifies the message by adding an error to the payload. It also return the index of modified bit
 
   void LogRead(bitset<4> const &errorbits); // Logs Reading Action
@@ -64,7 +65,7 @@ protected:
   void LogTimeout(int seq_num);
   void LogControl(int seq_num,bool Ack, bool Lost);
 
-  void SendData(string Msgg, float delay, int modify,bool lost,int duplicate);
+  void SendData(string Msgg,char Parity, float delay, int modify,bool lost,int duplicate);
   void FramingMsg(string &Payload);         // Applies byte stuffing to payload of msg
 
   void inc(int &num);
