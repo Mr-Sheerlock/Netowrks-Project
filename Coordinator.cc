@@ -11,6 +11,7 @@ void Coordinator::initialize()
   int NodeNumber, StartTime;
   DataFile >> NodeNumber >> StartTime;
   cMessage *msg = new cMessage();
+  msg->setName("Start");
   if (NodeNumber == 0)
   {
     sendDelayed(msg,StartTime, "out0"); return;

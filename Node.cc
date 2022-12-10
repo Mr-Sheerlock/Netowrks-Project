@@ -1,8 +1,8 @@
 #include "Node.h"
-
 Define_Module(Node);
 
-char GetParityByte(string Payload)
+
+char Node:: GetParityByte(string Payload)
 {
     int PayloadLength = Payload.size();
     vector<std::bitset<8>> CharVec(PayloadLength);
@@ -23,7 +23,7 @@ char GetParityByte(string Payload)
     return (char)Parity.to_ulong();
 }
 
-bool CheckError(string Payload, char ParityByte)
+bool Node:: CheckError(string Payload, char ParityByte)
 {
     bitset<8> ReceivedParity(ParityByte);
     int PayloadLength = Payload.size();
@@ -46,17 +46,6 @@ bool CheckError(string Payload, char ParityByte)
         return true;
     }
     return false;
-}
-
-// for debugging purposes later
-bitset<4> reverseBitset(bitset<4> mybits)
-{
-    bitset<4> res;
-    for (int i = 0; i < 4; i++)
-    {
-        res[i] = mybits[3 - i];
-    }
-    return res;
 }
 
 void Node::LogRead(bitset<4> const &errorbits)
@@ -153,97 +142,15 @@ void Node::ReadFile()
     DataFile.close();
 }
 
-// IMPORTANT NOTE: If bits are 1010, then bits[0]=0, bits[1]=1.... etc ie. bit[x] x starts from the least significant bit
-// Another important note: inc(frameToSend) expected must be outside this function)
-//potential #TODO: you might want to add a bool Buffered that gets multiplied by the PT and also propagated to SendData
-void Node::ErrSend(bool duplicate = 0)
-{
-    float delay = PT + TD;
-    int modify = -1;                                     // variable used for printing purposes
-    int duplicateVersion = 0;                            // variable used for printing purposes
-    string Message = Messages[nFramesAcked + nBuffered]; // Fetches message from vector
-    bitset<4> ErrBits = Errorbits[nFramesAcked + nBuffered];
-
-    
-    FramingMsg(Message); // Applies byte stuffing
-
-    if (ErrBits[1])
-    { // duplication
-        // ErrBits[1] = 0;
-        duplicateVersion = 1;
-        if (duplicate)
-        {
-            delay += DD;
-            duplicateVersion = 2;
-        }
-        if (!duplicate) // to prevent inf recursion
-            ErrSend(1);
-    }
-    char parity = GetParityByte(Message);
-    if (ErrBits[3])
-    { // call modify IMPORTANT: modify must return the index of modified bit
-        modify = ModifyMsg(Message);
-    }
-    if (ErrBits[0])
-    { // change delay variable
-        delay += ED;
-    }
-    SendData(Message, parity,delay, modify, ErrBits[2], duplicateVersion);
-}
-
-void Node::SendData(string Msgg, char Parity, float delay, int modify, bool lost, int duplicate)
-{
-    CustomMsg *msg = new CustomMsg();
-
-    // a message to signal the end of the processing
-    CustomMsg *processingFin = new CustomMsg("Processing Finished");
-    processingFin->setM_Header(1);
-    scheduleAt(simTime() + PT, processingFin);
-
-    msg->setM_Header(next_frame_to_Send);
-    //    string Msgg=Messages[nFramesAcked + next_frame_to_Send];
-    msg->setM_Payload(Msgg.c_str());
-    msg->setM_Trailer(Parity);
-    msg->setM_FrameType(0);
-    LogTransmissionOrRecieval(1, next_frame_to_Send, Msgg, Parity,
-                              modify, lost, duplicate, delay);
-    if (!duplicate || duplicate == 1)
-    {
-        //sending timeout
-        Timeouts[next_frame_to_Send] = new CustomMsg("Timeout");
-        CustomMsg *timeout = Timeouts[next_frame_to_Send];
-        timeout->setM_Header(0);
-        timeout->setM_Ack(next_frame_to_Send);
-        scheduleAt(simTime() + PT + TO, timeout);
-    }
-    if (lost)
-        return;
-
-    sendDelayed(msg, simTime() + delay, "out");
-}
-
 int Node::ModifyMsg(string &Payload)
 {
-    //    cout << "ModifyMSG Function Called" << endl;
-    //    cout << "Msg payload content: " << endl << msg->getM_Payload() << endl;
-
-    //    string Payload = msg->getM_Payload();   // returns payload from the custom message
-
-    //    cout << "String Payload: " << endl << Payload << endl;
-
     // We now need to convert the string into bitset
-
     vector<bitset<8>> Vmsg(Payload.size()); // Vector containing the bitset of each char in the payload
-
-    //    cout << "Bitset vector: " << endl;
-
     // Filling the vector
     for (int i = 0; i < Payload.size(); ++i)
     {
         bitset<8> CharPayload(Payload[i]); // bitset of one char from the payload
         Vmsg[i] = CharPayload;             // The MSB has index 0, LSB has index size-1
-
-        //        cout << Vmsg[i];
     }
 
     //    cout << endl;
@@ -263,33 +170,17 @@ int Node::ModifyMsg(string &Payload)
 
     Vmsg[ModifiedByte] = Vmsg[ModifiedByte] ^ error; // modifying that bit
 
-    //    cout << "Modified Bitset vector: " << endl;
-
     // Now, Vmsg contains the modified payload, we need to update the
     // CustomMessage's payload
     for (int i = 0; i < Payload.size(); ++i)
     {
         Payload[i] = (char)Vmsg[i].to_ulong();
-
-        //        cout << Vmsg[i];
     }
-
-    //    cout << endl;
-
-    //    cout << "String Payload after modification: " << endl << Payload << endl;
-    //    cout << "Modified Byte: " << ModifiedByte << ", Modified Bit: " << ModifiedBit << endl;
-    //    cout << "Returned value: " << ModifiedByte * 8 + ModifiedBit << endl;
-
-    //    msg->setM_Payload(Payload.c_str());     // updating message payload
-
-    //    cout << "Msg payload: " << endl << msg->getM_Payload() << endl;
-
     return ModifiedByte * 8 + ModifiedBit;
 }
 
 void Node::FramingMsg(string &Payload)
 {
-    //    string Payload = msg->getM_Payload();
     string ModifiedPayload = "";
 
     for (int i = 0; i < Payload.size(); ++i)
@@ -302,8 +193,156 @@ void Node::FramingMsg(string &Payload)
     }
 
     Payload = ModifiedPayload;
-    //    msg->setM_Payload(ModifiedPayload.c_str());     // updating the message payload
 }
+
+void Node::inc(int &seq_num)
+{
+    seq_num = (seq_num + 1) % (WS + 1);
+}
+
+int Node::dec(int seq_num)
+{
+    return ((seq_num + WS) % (WS+1));
+}
+
+void Node:: StartTimer(int SeqNum, float delay)
+{
+    scheduleAt(simTime() + delay + TO, Timeouts[SeqNum]);
+}
+
+int Node::ErrorHandling(string &Message, bitset<4> ErrorBits, float &TotalDelay)
+{
+    //TODO
+    //check for errors:
+    if(ErrorBits[2] == 1)   //Lost
+    {
+        return 0;
+    }
+    TotalDelay = CalculatePT() + TD;
+    if(ErrorBits[0] == 1)   //delay error
+    {
+        TotalDelay += ED;
+    }
+    if(ErrorBits[3] == 1)    //Modify
+    {
+        int BitModified = ModifyMsg(Message);
+    }
+    if(ErrorBits[1] == 1)   //Duplication
+    {
+        return 1;
+    }
+    return -1;
+}
+
+void Node::SendData(string Message, bitset<4> ErrorBits)
+{
+    CustomMsg *msg = new CustomMsg();
+    msg->setM_FrameType(0);
+    msg->setM_Header(next_frame_to_Send);
+    FramingMsg(Message);
+    msg->setM_Trailer(GetParityByte(Message));
+    float TotalDelay;
+    int Error = ErrorHandling(Message, ErrorBits, TotalDelay);
+    msg->setM_Payload(Message.c_str());
+    if(Error == 0) //lost
+    {
+        return;
+    }
+    else if(Error == 1) //duplicates
+    {
+        sendDelayed(msg, simTime() + TotalDelay + DD, "out");
+    }
+    sendDelayed(msg, simTime() + TotalDelay, "out");
+    //start timer
+    StartTimer(next_frame_to_Send, CalculatePT());
+}
+
+float Node::CalculatePT()
+{
+    if(simTime() >= PreviousPT)
+    {
+        PreviousPT = simTime().dbl() + PT;
+        return PT;
+    }
+    else
+    {
+        int TimeLeft = PreviousPT - simTime().dbl();
+        PreviousPT = simTime().dbl() + PT + TimeLeft;
+        return TimeLeft + PT;
+    }
+}
+
+void Node::SendControlMsg(int Frame_Type, int AckNum)
+{
+    CustomMsg *ControlMsg = new CustomMsg();
+    ControlMsg->setM_Ack(AckNum);
+    ControlMsg->setM_FrameType(Frame_Type);
+    if (uniform(0, 1) * 100 >= 10)
+    {
+        float delay = CalculatePT() + TD;
+        sendDelayed(ControlMsg, simTime() + delay, "out");
+    }
+    else
+    {
+        return;
+    }
+}
+
+void Node::Protocol(Events CurrentEvent, int SeqNumber)
+{
+    string CurrentMessage;
+    bitset<4> CurrentErrorBits;
+    while(true)
+    {
+        switch(CurrentEvent)
+        {
+            case Read:
+                //read from message buffer string and error bits
+                CurrentMessage = Messages[nBuffered + nFramesAcked];
+                CurrentErrorBits = Errorbits[nBuffered + nFramesAcked];
+                SendData(CurrentMessage, CurrentErrorBits);
+                //increase nbuffer
+                nBuffered ++;
+                //increment next frame to send
+                inc(next_frame_to_Send);
+                break;
+            case Ack:
+                //if seq == ack expected
+                if(SeqNumber == Ack_Expected)
+                {
+                    //stop timer
+                    cancelEvent(Timeouts[SeqNumber]);
+                    nBuffered--;
+                    inc(next_frame_to_Send);
+                }
+                break;
+            case Timeout_Nack:
+                //Retransmission
+                next_frame_to_Send = Ack_Expected;
+                CurrentMessage = Messages[nFramesAcked+1];
+                CurrentErrorBits.reset();     //0000 no error
+                SendData(CurrentMessage, CurrentErrorBits);
+                nBuffered = 1;
+                inc(next_frame_to_Send);
+                break;
+        }
+        //check if window buffer is full
+        if(nBuffered < WS)
+        {
+            CurrentEvent = Read;
+        }
+        else
+        {
+            return;
+        }
+        //check if there is more messages to send
+        if( nBuffered+nFramesAcked == Messages.size())
+        {
+            return;
+        }
+    }
+}
+
 
 void Node::initialize()
 {
@@ -321,159 +360,81 @@ void Node::initialize()
     id = this->getName()[4]; // id is if it's node 0 or 1
     DataPath = "input.txt";
     DataPath.insert(5, 1, id);
-    Timeouts = vector<CustomMsg *>(WS + 1, NULL);
+    PreviousPT = 0;
+    //Sender
+    Timeouts = vector<cMessage*> (WS + 1);
+    for (int i = 0; i < WS+1; i++)
+    {
+        Timeouts[i] = new cMessage();
+        Timeouts[i]->setName(to_string(i).c_str());
+    }
     next_frame_to_Send = 0;
+    Ack_Expected = 0;
     nBuffered = 0;
     nFramesAcked = 0;
+    //Receiver
     frame_expected = 0;
-}
-
-// you might wanna add a check in the case of the end of the Messages Vector
-void Node::inc(int &seq_num)
-{
-    seq_num = (seq_num + 1) % (WS + 1);
 }
 
 void Node::handleMessage(cMessage *msg)
 {
 
     CustomMsg *packet = dynamic_cast<CustomMsg *>(msg);
-    if (packet == nullptr)
+    if(packet == nullptr)
     {
-        // coordinator's first move
-        ReadFile();
-        if(Messages.size()==0){
-            return; //mat3ml4 7ag
-        }
-        //  timeout= new CustomMsg("Timeout");
-        //  timeout->setM_Header(4);
-        //  scheduleAt(simTime()+3, timeout);
-        //  // cancelEvent(timeout);
-
-        ErrSend();
-        nBuffered++;
-        if (!(nFramesAcked + nBuffered < Msgsread))
+        string msg_content = msg->getName();
+        if(msg_content == "Start")
         {
-            Msgsread++;
-            LogRead(Errorbits[nFramesAcked + nBuffered]);
-        }
-
-        // Msgsread++;
-        // ErrSend();
-        // nBuffered++;
-        // Msgsread++;
-
-        return;
-    }
-    else
-    {
-        // other node
-        string payload = packet->getM_Payload();
-        int FrameType = packet->getM_FrameType();
-
-    switch (FrameType) {
-        case 0:
-        // data
-        if (payload.length()==0)
-        { // control message on Sender side:  either timeout or Processing finished (Network ready)
-            if ( packet->getM_Header())
-            {
-                //Processing finished
-                // cout <<"ana 5alast processing w habda2 felly ba3do ya mosahel"<<endl;
-                // EV <<"ana 5alast processing w habda2 felly ba3do ya mosahel"<<endl;
-                ErrSend();
-                inc(next_frame_to_Send);
-            }
-            else{
-                // Timeout
-                next_frame_to_Send = packet->getM_Header();
-                nBuffered = 0;
-                // delete Timeouts[packet->getM_Header()];
-                Timeouts[packet->getM_Header()] = NULL;
-                for (int i = 0; i < Timeouts.size(); i++)
-                {
-                    if (Timeouts[i])
-                    {
-                        cancelEvent(Timeouts[i]);
-                        delete Timeouts[i];
-                        Timeouts[i] = NULL;
-                    }
-                }
-            }
+            // coordinator's first move
+            ReadFile();
+            Protocol(Read, 0);
         }
         else
         {
-            cout<<"Receiver received a received message";
-            // reciever
-            if (packet->getM_Header() == frame_expected)
+            //timeout
+            int Timeout_seq_num = atoi(msg_content.c_str());
+            Protocol(Timeout_Nack, Timeout_seq_num);
+        }
+    }
+    else
+    {
+        if(packet->getM_FrameType() == 0)   //data
+        {
+            //Receiver
+            int Msg_seq_number = packet->getM_Header();
+            //check if frame expected
+            if(Msg_seq_number == frame_expected)
             {
-                inc(frame_expected);
-                char parity = packet->getM_Trailer();
-                CustomMsg *ack = new CustomMsg();
-                if (CheckError(payload, parity))
+                char Parity = packet->getM_Trailer();
+                string Payload = packet->getM_Payload();
+                if(CheckError(Payload, Parity))
                 {
-                    // no error
-                    ack->setM_FrameType(1);
-                    ack->setM_Ack(frame_expected);
+                    //Send ACK
+                    int Type = 1;
+                    inc(frame_expected);
                 }
                 else
                 {
-                    ack->setM_FrameType(2);
-                    ack->setM_Ack(frame_expected);
+                    //Send NACK
+                    int Type = 2;
                 }
-                if (uniform(0, 1) * 100 >= 10)
-                    sendDelayed(ack, simTime() + PT + TD, "out");
             }
-            // law 7aga lessa hateegy b3deen discard
-            //  law 7aga gatly 2abl keda handle the counterpart of acc-ack
-            cout << " I received the message " << endl;
-            EV << " I received your message " << endl;
-            cout << "The load is " << payload;
-            EV << "The load is " << payload;
+
+            int Type = 1;
+            int AckNum = dec(Msg_seq_number);
+            SendControlMsg(Type, AckNum);
         }
-        break;
-    case 1:
-        // ack
-
-        break;
-    case 2:
-        // nack
-        break;
+        else if(packet->getM_FrameType() == 1)  //ack
+        {
+            //Sender
+            int Ack_seq_number = packet->getM_Ack();
+            Protocol(Ack, Ack_seq_number);
+        }
+        else if(packet->getM_FrameType() == 2)  //nack
+        {
+            //Sender
+            int Nack_seq_number = packet->getM_Ack();
+            Protocol(Timeout_Nack, Nack_seq_number);
+        }
     }
-
-    // if (!payload.length())
-    // { // control message:  either ack or timeout or Processing finished (Network ready)
-
-    //     // case(packet->getM_Ack())
-    // }
-    // else // reciever
-    // {
-    //     if (packet->getM_Header() == frame_expected)
-    //     {
-    //         inc(frame_expected);
-    //         char parity = packet->getM_Trailer();
-    //         CustomMsg *ack = new CustomMsg();
-    //         if (CheckError(payload, parity))
-    //         {
-    //             // no error
-    //             ack->setM_FrameType(1);
-    //             ack->setM_Ack(frame_expected);
-    //         }
-    //         else
-    //         {
-    //             ack->setM_FrameType(2);
-    //             ack->setM_Ack(frame_expected);
-    //         }
-    //         if (uniform(0, 1) * 100 >= 10)
-    //             sendDelayed(ack, simTime() + PT + TD, "out");
-    //     }
-    //     // law 7aga lessa hateegy b3deen discard
-    //     //  law 7aga gatly 2abl keda handle the counterpart of acc-ack
-    //     cout << " I received the message " << endl;
-    //     EV << " I received your message " << endl;
-    //     cout << "The load is " << payload;
-    //     EV << "The load is " << payload;
-    // }
-}
-// Message
 }
