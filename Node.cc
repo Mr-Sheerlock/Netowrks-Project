@@ -161,6 +161,7 @@ void Node::ErrSend(bool duplicate = 0)
     float delay = PT + TD;
     int modify = -1;                                     // variable used for printing purposes
     int duplicateVersion = 0;                            // variable used for printing purposes
+    
     string Message = Messages[nFramesAcked + nBuffered]; // Fetches message from vector
     bitset<4> ErrBits = Errorbits[nFramesAcked + nBuffered];
 
@@ -434,10 +435,15 @@ void Node::handleMessage(cMessage *msg)
         break;
     case 1:
         // ack
+        //check if it's on the leading frame in the window
+        //if yes, stop the timer and reduce nbuffered and increase nFramesAcked
+        //if no: TENATIVE SOLUTION: eb3at el frame w 5las, wl reciever should send all of the acks from that frame up to 
+        // the frame that it expects (exclusive)
 
         break;
     case 2:
         // nack
+        //1 2 3 4 5 6   //rec 1 2 3 4 5 
         break;
     }
 
