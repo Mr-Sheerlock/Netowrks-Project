@@ -239,7 +239,7 @@ int Node::dec(int seq_num)
 
 void Node:: StartTimer(int SeqNum, float delay)
 {
-    EV<< "Setting Timer @ SeqNum " << SeqNum <<endl;
+    EV<< "Setting Timer @ SeqNum " << SeqNum << " That should time out at " <<simTime() + delay +TO << endl;
     scheduleAt(simTime() + delay + TO, Timeouts[SeqNum]);
 }
 
@@ -270,7 +270,7 @@ int Node::ErrorHandling(string &Message, bitset<4> ErrorBits, float &TotalDelay,
 
 void Node::SendData(string Message, bitset<4> ErrorBits)
 {
-    EV << "SimTime is " <<simTime()<<endl;
+    // EV << "SimTime is " <<simTime()<<endl;
     CustomMsg *msg = new CustomMsg();
     msg->setM_FrameType(0);
     msg->setM_Header(next_frame_to_Send);
@@ -330,6 +330,7 @@ void Node::SendControlMsg(int Frame_Type, int AckNum)
     }
     else
     {
+        EV<< "Ack of num "<<AckNum<<" LOSTTTT"<<endl;
         return;
     }
 }
@@ -344,6 +345,7 @@ void Node::Protocol(Events CurrentEvent, int SeqNumber)
         {
             case Read:
                 //read from message buffer string and error bits
+                // cout << "NFramesAcked, Nbuffered  @NOW is " << nFramesAcked << ",  " << nBuffered<<endl;
                 CurrentMessage = Messages[nBuffered + nFramesAcked];
                 CurrentErrorBits = Errorbits[nBuffered + nFramesAcked];
                 if(nBuffered + nFramesAcked>=Msgsread){
@@ -370,14 +372,15 @@ void Node::Protocol(Events CurrentEvent, int SeqNumber)
                     nBuffered--;
                     // inc(next_frame_to_Send);
                     inc(Ack_Expected);
-                    EV<< "AckExpected Now is" <<Ack_Expected<<endl;
+                    EV<< "AckExpected Now is " <<Ack_Expected<<endl;
                     nFramesAcked++;
+                    // EV << "NFramesAcked, Nbuffered  " << nFramesAcked << ",  " << nBuffered;
                     
                 }
                 break;
             case Timeout_Nack:
                 //Retransmission
-                EV << " Timeout yaba  @ SeqNum" << SeqNumber <<endl;
+                EV << " Timeout/NACK  @ SeqNum " << SeqNumber <<endl;
                  for (int i = 0; i < Timeouts.size(); i++)
                 {
                     if (Timeouts[i])
@@ -388,6 +391,8 @@ void Node::Protocol(Events CurrentEvent, int SeqNumber)
                 next_frame_to_Send = Ack_Expected;
                 CurrentMessage = Messages[nFramesAcked];
                 CurrentErrorBits.reset();     //0000 no error
+                EV << "Resending First Message with no errors.. " << endl;
+                EV<<"Message = "<<CurrentMessage<<" "<<endl;
                 SendData(CurrentMessage, CurrentErrorBits);
                 nBuffered = 1;
                 inc(next_frame_to_Send);
@@ -470,6 +475,9 @@ void Node::handleMessage(cMessage *msg)
         {
             //Sender
             EV<<"Received an Ack"<<endl;
+            EV << "NFramesAcked, Nbuffered  @sendoor" << nFramesAcked << ",  " << nBuffered<<endl;
+            cout << "NFramesAcked, Nbuffered  @sendoor" << nFramesAcked << ",  " << nBuffered<<endl;
+
             int Ack_seq_number = packet->getM_Ack();
             Protocol(Ack, Ack_seq_number);
         }
