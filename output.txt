@@ -1,2 +1,11 @@
-At time 2.000 Node0 , Introducing error with code= 0000
-At time 2.000 Node0 , sent frame with seq_num= 0 and payload=  Resala taweela naw3an ma. bs 5leena brdo ngrb n5leeha atwal 7aba kaman. eih el moshkela y3ny and trailer= 00001100 , Modified -1 , Lost No, Duplicate 0 , Delay 1
+At time [0.000] Node0 , Introducing error with code= [0000]
+At time [0.500] Node0 , Introducing error with code= [0000]
+At time [1.000] Node0 , Introducing error with code= [0000]
+At time [1.500] Node0 , Introducing error with code= [0000]
+At time [3.000] Node0 , Introducing error with code= [0000]
+At time [3.500] Node0 , Introducing error with code= [0100]
+At time [4.000] Node0 , Introducing error with code= [1000]
+At time [4.500] Node0 , Introducing error with code= [0000]
+At time [6.000] Node0 , Introducing error with code= [0001]
+At time [15.000] Node0 , Introducing error with code= [1000]
+At time [15.500] Node0 , Introducing error with code= [0000]

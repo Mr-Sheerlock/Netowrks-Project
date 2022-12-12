@@ -82,7 +82,7 @@ protected:
   int dec(int seq_num);
 
   void StartTimer(int SeqNum, float delay);
-  int ErrorHandling(string &Message, bitset<4> ErrorBits, float &TotalDelay);
+  int ErrorHandling(string &Message, bitset<4> ErrorBits, float &TotalDelay,float &PTDelay);
   void SendData(string Message, bitset<4> ErrorBits);
   float CalculatePT();
   void SendControlMsg(int Frame_Type, int AckNum);
