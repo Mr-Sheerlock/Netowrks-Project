@@ -101,21 +101,23 @@ void Node::LogTransmissionOrRecieval(bool Transmitting, int seq_num, string payl
     string out, temp;
     bitset<8> trailer(Trailer);
     OutFile.open("output.txt", std::ios_base::app);
-    double now = simTime().dbl();
+    // double now = simTime().dbl() +PreviousPT;
+    double now = PreviousPT;
     out = "At time [";
     OutFile.precision(3);
     OutFile << out << fixed << now << "]";
     temp = Transmitting ? "sent" : "received";
     out = " Node";
     out += id;
-    out += " , " + temp + " frame with seq_num= " + to_string(seq_num);
-    out += " and payload= " + payload;
-    out += " and trailer= " + trailer.to_string();
-    out += " , Modified " + to_string(Modified);
+    out += " , " + temp + " frame with seq_num= [" + to_string(seq_num);
+    out += "] and payload= [" + payload;
+    out += "] and trailer= [" + trailer.to_string();
+    out += "] , Modified [" + to_string(Modified);
     temp = Lost ? "Yes" : "No";
-    out += " , Lost " + temp;
-    out += ", Duplicate " + to_string(Duplicate);
-    out += " , Delay " + to_string(delay);
+    out += "] , Lost [" + temp;
+    out += "], Duplicate [" + to_string(Duplicate);
+    out += "] , Delay [" + to_string(delay);
+    out+="]";
     OutFile << out << endl;
     OutFile.close();
 }
@@ -126,13 +128,13 @@ void Node::LogTimeout(int seq_num)
     string out;
     OutFile.open("output.txt", std::ios_base::app);
     double now = simTime().dbl();
-    out = "Timeout event at time ";
+    out = "Timeout event at time [";
     OutFile.precision(3);
-    OutFile << out << fixed << now;
-    out = " at Node";
+    OutFile << out << fixed << now<< "]";
+    out = " at Node [";
     out += id;
-    out += " for frame with seq_num= " + to_string(seq_num);
-    OutFile << out << endl;
+    out += "] for frame with seq_num= [" + to_string(seq_num);
+    OutFile << out << "]" << endl ;
     OutFile.close();
 }
 
@@ -142,17 +144,17 @@ void Node::LogControl(int seq_num, bool Ack = 1, bool Lost = 0)
     string out, temp;
     OutFile.open("output.txt", std::ios_base::app);
     double now = simTime().dbl();
-    out = "At time ";
+    out = "At time [";
     OutFile.precision(3);
-    OutFile << out << fixed << now;
+    OutFile << out << fixed << now<<"]";
     temp = Ack ? "ACK" : "NACK";
-    out = " Node";
+    out = " Node [";
     out += id;
-    out += ", Sending " + temp;
-    out += " with number " + to_string(seq_num);
+    out += "], Sending [" + temp;
+    out += "] with number [" + to_string(seq_num);
     temp = Lost ? "Yes" : "No";
-    out += " , loss " + temp;
-    OutFile << out << endl;
+    out += "] , loss [" + temp;
+    OutFile << out <<"]"<< endl ;
     OutFile.close();
 }
 
@@ -273,10 +275,17 @@ void Node::SendData(string Message, bitset<4> ErrorBits)
     msg->setM_FrameType(0);
     msg->setM_Header(next_frame_to_Send);
     FramingMsg(Message);
-    msg->setM_Trailer(GetParityByte(Message));
+    char trailer=GetParityByte(Message);
+    msg->setM_Trailer(trailer);
     float TotalDelay, PTDelay; 
     int Error = ErrorHandling(Message, ErrorBits, TotalDelay, PTDelay);
     msg->setM_Payload(Message.c_str());
+    float delay= ErrorBits[0]? ED: 0;
+    StartTimer(next_frame_to_Send, PTDelay);
+
+    LogTransmissionOrRecieval(1,next_frame_to_Send,Message,trailer,ErrorBits[3],ErrorBits[2],ErrorBits[1],delay );
+    if(ErrorBits[1]) LogTransmissionOrRecieval(1,next_frame_to_Send,Message,trailer,ErrorBits[3],ErrorBits[2],2,delay );
+    
     if(Error == 0) //lost
     {
         return;
@@ -289,8 +298,6 @@ void Node::SendData(string Message, bitset<4> ErrorBits)
     
     sendDelayed(msg, TotalDelay, "out");
     //start timer
-    StartTimer(next_frame_to_Send, PTDelay);
-    // LogTransmissionOrRecieval(1,next_frame_to_Send,Message,)
 }
 
 float Node::CalculatePT()
@@ -314,7 +321,9 @@ void Node::SendControlMsg(int Frame_Type, int AckNum)
     CustomMsg *ControlMsg = new CustomMsg();
     ControlMsg->setM_Ack(AckNum);
     ControlMsg->setM_FrameType(Frame_Type);
-    if (uniform(0, 1) * 100 >= 10)
+    float temp =uniform(0, 1) * 100;
+    LogControl(AckNum,1,temp>=LP);
+    if ( temp>= LP)
     {
         float delay = CalculatePT() + TD;
         sendDelayed(ControlMsg, delay, "out");
@@ -339,7 +348,7 @@ void Node::Protocol(Events CurrentEvent, int SeqNumber)
                 CurrentErrorBits = Errorbits[nBuffered + nFramesAcked];
                 if(nBuffered + nFramesAcked>=Msgsread){
                     //if first time to read
-                    Msgsread;
+                    Msgsread++;
                     LogRead(CurrentErrorBits);
                 }
                 EV<< "Sending ";
@@ -369,6 +378,13 @@ void Node::Protocol(Events CurrentEvent, int SeqNumber)
             case Timeout_Nack:
                 //Retransmission
                 EV << " Timeout yaba  @ SeqNum" << SeqNumber <<endl;
+                 for (int i = 0; i < Timeouts.size(); i++)
+                {
+                    if (Timeouts[i])
+                    {
+                        cancelEvent(Timeouts[i]);
+                    }
+                }
                 next_frame_to_Send = Ack_Expected;
                 CurrentMessage = Messages[nFramesAcked];
                 CurrentErrorBits.reset();     //0000 no error
