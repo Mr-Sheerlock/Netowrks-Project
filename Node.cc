@@ -13,7 +13,6 @@ void Node::initialize()
     ED = par("ED").doubleValue();
     DD = par("DD").doubleValue();
     LP = par("LP").doubleValue();
-    cout << "Initializing " << this->getName() << endl;
     id = this->getName()[4]; // id is if it's node 0 or 1
     DataPath = "input.txt";
     DataPath.insert(5, 1, id);
@@ -32,6 +31,7 @@ void Node::initialize()
     Msgsread=0;
     //Receiver
     frame_expected = 0;
+    BitModified=-1;
 }
 
 char Node:: GetParityByte(string Payload)
@@ -86,11 +86,11 @@ void Node::LogRead(bitset<4> const &errorbits)
     OutFile.open("output.txt", std::ios_base::app);
     double now = simTime().dbl() >=PreviousPT ? simTime().dbl() :PreviousPT ;
     out = "At time [";
-    OutFile.precision(3);
+    OutFile.precision(1);
     OutFile << out << fixed << now;
-    out = "] Node";
+    out = "] Node [";
     out += id;
-    out += " , Introducing channel error with code= [" + errorbits.to_string();
+    out += "] , Introducing channel error with code= [" + errorbits.to_string();
     OutFile << out << "]" << endl;
     OutFile.close();
 }
@@ -104,12 +104,12 @@ void Node::LogTransmissionOrRecieval(bool Transmitting, int seq_num, string payl
     // double now = simTime().dbl() +PreviousPT;
     double now = PreviousPT;
     out = "At time [";
-    OutFile.precision(3);
+    OutFile.precision(1);
     OutFile << out << fixed << now << "]";
     temp = Transmitting ? "sent" : "received";
-    out = " Node";
+    out = " Node [";
     out += id;
-    out += " , " + temp + " frame with seq_num= [" + to_string(seq_num);
+    out += "] , " + temp + " frame with seq_num= [" + to_string(seq_num);
     out += "] and payload= [" + payload;
     out += "] and trailer= [" + trailer.to_string();
     out += "] , Modified [" + to_string(Modified);
@@ -129,7 +129,7 @@ void Node::LogTimeout(int seq_num)
     OutFile.open("output.txt", std::ios_base::app);
     double now = simTime().dbl();
     out = "Timeout event at time [";
-    OutFile.precision(3);
+    OutFile.precision(1);
     OutFile << out << fixed << now<< "]";
     out = " at Node [";
     out += id;
@@ -145,7 +145,7 @@ void Node::LogControl(int seq_num, bool Ack = 1, bool Lost = 0)
     OutFile.open("output.txt", std::ios_base::app);
     double now = simTime().dbl();
     out = "At time [";
-    OutFile.precision(3);
+    OutFile.precision(1);
     OutFile << out << fixed << now<<"]";
     temp = Ack ? "ACK" : "NACK";
     out = " Node [";
@@ -165,9 +165,10 @@ void Node::ReadFile()
 
     while (getline(DataFile, temp))
     {
-        err = temp.substr(0, 4);
+        // cout << temp.size()<<endl;
+        err = temp.substr(0, 4); //start at 0 and get 4 chars
         bitset<4> errorbits = bitset<4>(err);
-        msg = temp.substr(4);
+        msg = temp.substr(5); //start at 5 and get the rest (not 4 because of the whitespace )
         Messages.push_back(msg);
         Errorbits.push_back(errorbits);
     }
@@ -188,7 +189,7 @@ int Node::ModifyMsg(string &Payload)
     //    cout << endl;
 
     // Now, we want to modify the payload by inverting any 1 bit from it
-    int ModifiedByte = uniform(0, 1) * Payload.size(); // generates a random integer between 0 and size-1 inclusive
+    int ModifiedByte = uniform(0, 1) * (Payload.size()-1); // generates a random integer between 0 and size-1 inclusive
                                                        // This is the char that will be modified
     int ModifiedBit = uniform(0, 1) * 7;               // This is the bit that will be modified in that char (0 indexing is used)
     bitset<8> error(128 / pow(2, ModifiedBit));
@@ -208,13 +209,13 @@ int Node::ModifyMsg(string &Payload)
     {
         Payload[i] = (char)Vmsg[i].to_ulong();
     }
+
     return ModifiedByte * 8 + ModifiedBit;
 }
 
 void Node::FramingMsg(string &Payload)
 {
     string ModifiedPayload = "";
-
     for (int i = 0; i < Payload.size(); ++i)
     {
         if (Payload[i] == '$' || Payload[i] == '/') // We need to add a '/' before the character
@@ -259,7 +260,7 @@ int Node::ErrorHandling(string &Message, bitset<4> ErrorBits, float &TotalDelay,
     }
     if(ErrorBits[3] == 1)    //Modify
     {
-        int BitModified = ModifyMsg(Message);
+        BitModified = ModifyMsg(Message);
     }
     if(ErrorBits[1] == 1)   //Duplication
     {
@@ -282,9 +283,9 @@ void Node::SendData(string Message, bitset<4> ErrorBits)
     msg->setM_Payload(Message.c_str());
     float delay= ErrorBits[0]? ED: 0;
     StartTimer(next_frame_to_Send, PTDelay);
-
-    LogTransmissionOrRecieval(1,next_frame_to_Send,Message,trailer,ErrorBits[3],ErrorBits[2],ErrorBits[1],delay );
-    if(ErrorBits[1]) LogTransmissionOrRecieval(1,next_frame_to_Send,Message,trailer,ErrorBits[3],ErrorBits[2],2,delay );
+    int bitmod= ErrorBits[3]? BitModified : -1;
+    LogTransmissionOrRecieval(1,next_frame_to_Send,Message,trailer,bitmod,ErrorBits[2],ErrorBits[1],delay );
+    if(ErrorBits[1]) LogTransmissionOrRecieval(1,next_frame_to_Send,Message,trailer,bitmod,ErrorBits[2],2,delay );
     
     if(Error == 0) //lost
     {
@@ -322,8 +323,8 @@ void Node::SendControlMsg(int Frame_Type, int AckNum)
     ControlMsg->setM_Ack(AckNum);
     ControlMsg->setM_FrameType(Frame_Type);
     float temp =uniform(0, 1) * 100;
-    LogControl(AckNum,1,temp>=LP);
-    if ( temp>= LP)
+    LogControl(AckNum,1,temp> LP);
+    if ( temp> LP)
     {
         float delay = CalculatePT() + TD;
         sendDelayed(ControlMsg, delay, "out");
@@ -430,11 +431,15 @@ void Node::handleMessage(cMessage *msg)
             // coordinator's first move
             ReadFile();
             Protocol(Read, 0);
+            //sending uninitialized messages can cause a runtime error 
+            // cMessage* lol;
+            // sendDelayed(lol, 1, "out");
         }
         else
         {
             //timeout
             int Timeout_seq_num = atoi(msg_content.c_str());
+            LogTimeout(Timeout_seq_num);
             Protocol(Timeout_Nack, Timeout_seq_num);
         }
     }
@@ -475,8 +480,6 @@ void Node::handleMessage(cMessage *msg)
         {
             //Sender
             EV<<"Received an Ack"<<endl;
-            EV << "NFramesAcked, Nbuffered  @sendoor" << nFramesAcked << ",  " << nBuffered<<endl;
-            cout << "NFramesAcked, Nbuffered  @sendoor" << nFramesAcked << ",  " << nBuffered<<endl;
 
             int Ack_seq_number = packet->getM_Ack();
             Protocol(Ack, Ack_seq_number);

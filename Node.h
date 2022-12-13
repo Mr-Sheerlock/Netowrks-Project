@@ -11,6 +11,7 @@
 #include <fstream>
 #include <cmath>        // included to use pow function
 #include <unistd.h>
+#include<algorithm>
 using std::bitset;
 using std::cin;
 using std::cout;
@@ -19,6 +20,7 @@ using std::string;
 using std::to_string;
 using std::vector;
 using std::fixed;
+using std::stringstream;
 #include "CustomMsg_m.h"
 using namespace omnetpp;
 
@@ -53,7 +55,7 @@ class Node : public cSimpleModule
   int Msgsread;
   int Ack_Expected;
   float PreviousPT;   //processing time of previously sent frames
-
+  int BitModified;
   enum Events
   {   Read = 0,
       Timeout_Nack = 1,
