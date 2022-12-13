@@ -215,7 +215,7 @@ int Node::ModifyMsg(string &Payload)
 
 void Node::FramingMsg(string &Payload)
 {
-    string ModifiedPayload = "";
+    string ModifiedPayload = "$";
     for (int i = 0; i < Payload.size(); ++i)
     {
         if (Payload[i] == '$' || Payload[i] == '/') // We need to add a '/' before the character
@@ -224,7 +224,7 @@ void Node::FramingMsg(string &Payload)
         }
         ModifiedPayload.push_back(Payload[i]); // appending the next character
     }
-
+    ModifiedPayload.push_back('$');
     Payload = ModifiedPayload;
 }
 
