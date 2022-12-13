@@ -1,7 +1,7 @@
 1- how to handle the counterpart of accumulative ack?
 2- How to handle timeouts and finished processing (we did it by using messages, by utilizing the header)?
 3- Are Buffered frames processed again?
-
+4- Can HandleMessage interrupt itself while it itself is processing another message? (most likely not)
 
 Hashish's idea: 
 //assuming that nodes process in send and recieve and also process buffered frames too

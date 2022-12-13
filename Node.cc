@@ -175,6 +175,7 @@ void Node::ReadFile()
     DataFile.close();
 }
 
+
 int Node::ModifyMsg(string &Payload)
 {
     // We now need to convert the string into bitset
@@ -476,10 +477,7 @@ void Node::handleMessage(cMessage *msg)
             EV << "Sending Ack on AckNum " << AckNum<<endl;
             SendControlMsg(Type, AckNum);
         }
-        else if(packet->getM_FrameType() == 1)  //ack
-        {
-            //Sender
-            EV<<"Received an Ack"<<endl;
+
 
             int Ack_seq_number = packet->getM_Ack();
             Protocol(Ack, Ack_seq_number);
