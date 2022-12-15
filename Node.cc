@@ -143,7 +143,8 @@ void Node::LogControl(int seq_num, bool Ack = 1, bool Lost = 0)
 
     string out, temp;
     OutFile.open("output.txt", std::ios_base::app);
-    double now = simTime().dbl();
+    // double now = simTime().dbl();
+    double now = PreviousPT;
     out = "At time [";
     OutFile.precision(1);
     OutFile << out << fixed << now << "]";
@@ -151,6 +152,10 @@ void Node::LogControl(int seq_num, bool Ack = 1, bool Lost = 0)
     out = " Node [";
     out += id;
     out += "], Sending [" + temp;
+    //comment the next line law te3ebt fl debugging:
+    //#TODO: uncomment the next line fel tasleem
+    // inc(seq_num);
+
     out += "] with number [" + to_string(seq_num);
     temp = Lost ? "Yes" : "No";
     out += "] , loss [" + temp;
@@ -200,7 +205,7 @@ int Node::ModifyMsg(string &Payload)
     // 2^7 = 1000 0000
     // 128 divided pow will reverse the indexing order, such that if the ModifiedBit = 0
     // the first element (index 0, or MSB) will be modified
-
+    if(Payload.size())
     Vmsg[ModifiedByte] = Vmsg[ModifiedByte] ^ error; // modifying that bit
 
     // Now, Vmsg contains the modified payload, we need to update the
@@ -215,6 +220,7 @@ int Node::ModifyMsg(string &Payload)
 
 void Node::FramingMsg(string &Payload)
 {
+    //start of the frame flag
     string ModifiedPayload = "$";
     for (int i = 0; i < Payload.size(); ++i)
     {
@@ -224,6 +230,7 @@ void Node::FramingMsg(string &Payload)
         }
         ModifiedPayload.push_back(Payload[i]); // appending the next character
     }
+    //end of the frame flag
     ModifiedPayload.push_back('$');
     Payload = ModifiedPayload;
 }
@@ -279,7 +286,7 @@ void Node::SendData(string Message, bitset<4> ErrorBits)
     char trailer = GetParityByte(Message);
     msg->setM_Trailer(trailer);
     float TotalDelay, PTDelay;
-    int Error = ErrorHandling(Message, ErrorBits, TotalDelay, PTDelay);
+    int Error = ErrorHandling(Message, ErrorBits, TotalDelay, PTDelay); //here CalculatePT gets called
     msg->setM_Payload(Message.c_str());
     float delay = ErrorBits[0] ? ED : 0;
     StartTimer(next_frame_to_Send, PTDelay);
@@ -323,7 +330,6 @@ void Node::SendControlMsg(int Frame_Type, int AckNum)
     ControlMsg->setM_Ack(AckNum);
     ControlMsg->setM_FrameType(Frame_Type);
     float temp = uniform(0, 1) * 100;
-    LogControl(AckNum, 1, temp > LP);
     if (temp > LP)
     {
         float delay = CalculatePT() + TD;
@@ -332,8 +338,8 @@ void Node::SendControlMsg(int Frame_Type, int AckNum)
     else
     {
         EV << "Ack of num " << AckNum << " LOSTTTT" << endl;
-        return;
     }
+    LogControl(AckNum, 1, temp <= LP);
 }
 
 void Node::Protocol(Events CurrentEvent, int SeqNumber)
@@ -430,6 +436,11 @@ void Node::handleMessage(cMessage *msg)
             // coordinator's first move
             ReadFile();
             Protocol(Read, 0);
+            // string lol = "\0";
+            // cout << "size is " << lol.size()<<endl;
+//            FramingMsg(lol);
+//            GetParityByte(lol);
+//            ModifyMsg(lol);
             // sending uninitialized messages can cause a runtime error
             //  cMessage* lol;
             //  sendDelayed(lol, 1, "out");
