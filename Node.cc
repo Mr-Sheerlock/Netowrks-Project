@@ -245,6 +245,11 @@ int Node::dec(int seq_num)
     return ((seq_num + WS) % (WS + 1));
 }
 
+bool Node::Between(int a, int b, int c ){
+
+    return ((a<=b)&&(b<c))|| ((c<a)&& (a<=b)) || ((b<c)&&(c<a));
+}
+
 void Node::StartTimer(int SeqNum, float delay)
 {
     EV << "Setting Timer @ SeqNum " << SeqNum << " That should time out at " << simTime() + delay + TO << endl;
@@ -384,6 +389,17 @@ void Node::Protocol(Events CurrentEvent, int SeqNumber)
                 nFramesAcked++;
                 // EV << "NFramesAcked, Nbuffered  " << nFramesAcked << ",  " << nBuffered;
             }
+            //accumulative ack
+            if(Between(Ack_Expected,SeqNumber,next_frame_to_Send))
+            EV<< "starting the loop of accACK to set things right"<<endl;
+            while(Between(Ack_Expected,SeqNumber,next_frame_to_Send)){
+                nBuffered--;
+                //stop the timer
+                cancelEvent(Timeouts[Ack_Expected]);
+                inc(Ack_Expected);
+                nFramesAcked++;
+            }
+
             break;
         case Timeout_Nack:
             // Retransmission

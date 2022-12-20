@@ -88,6 +88,7 @@ protected:
   void SendData(string Message, bitset<4> ErrorBits);
   float CalculatePT();
   void SendControlMsg(int Frame_Type, int AckNum);
+  bool Between(int a, int b, int c );
   void Protocol(Events CurrentEvent, int SeqNumber);
 
 };
