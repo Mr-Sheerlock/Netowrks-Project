@@ -103,6 +103,7 @@ void Node::LogTransmissionOrRecieval(bool Transmitting, int seq_num, string payl
     OutFile.open("output.txt", std::ios_base::app);
     // double now = simTime().dbl() +PreviousPT;
     double now = PreviousPT;
+    if(Duplicate==2) now+=DD;
     out = "At time [";
     OutFile.precision(1);
     OutFile << out << fixed << now << "]";
@@ -298,8 +299,8 @@ void Node::SendData(string Message, bitset<4> ErrorBits)
     int bitmod = ErrorBits[3] ? BitModified : -1;
     LogTransmissionOrRecieval(1, next_frame_to_Send, Message, trailer, bitmod, ErrorBits[2], ErrorBits[1], delay);
     if (ErrorBits[1])
-        LogTransmissionOrRecieval(1, next_frame_to_Send, Message, trailer, bitmod, ErrorBits[2], 2, delay);
-
+        LogTransmissionOrRecieval(1, next_frame_to_Send, Message, trailer, bitmod, ErrorBits[2], 2, delay+DD);
+        
     if (Error == 0) // lost
     {
         return;
@@ -344,7 +345,7 @@ void Node::SendControlMsg(int Frame_Type, int AckNum)
     {
         EV << "Ack of num " << AckNum << " LOSTTTT" << endl;
     }
-    LogControl(AckNum, 1, temp <= LP);
+    LogControl(AckNum, Frame_Type==1, temp <= LP);
 }
 
 void Node::Protocol(Events CurrentEvent, int SeqNumber)
@@ -509,8 +510,8 @@ void Node::handleMessage(cMessage *msg)
         else if (packet->getM_FrameType() == 2) // nack
         {
             // Sender
-            int Nack_seq_number = packet->getM_Ack();
-            Protocol(Timeout_Nack, Nack_seq_number);
+            // int Nack_seq_number = packet->getM_Ack();
+            // Protocol(Timeout_Nack, Nack_seq_number);
         }
     }
 }
