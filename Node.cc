@@ -299,7 +299,7 @@ void Node::SendData(string Message, bitset<4> ErrorBits)
     int bitmod = ErrorBits[3] ? BitModified : -1;
     LogTransmissionOrRecieval(1, next_frame_to_Send, Message, trailer, bitmod, ErrorBits[2], ErrorBits[1], delay);
     if (ErrorBits[1])
-        LogTransmissionOrRecieval(1, next_frame_to_Send, Message, trailer, bitmod, ErrorBits[2], 2, delay+DD);
+        LogTransmissionOrRecieval(1, next_frame_to_Send, Message, trailer, bitmod, ErrorBits[2], 2, delay);
         
     if (Error == 0) // lost
     {
