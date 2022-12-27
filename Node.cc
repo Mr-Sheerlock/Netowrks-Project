@@ -84,6 +84,9 @@ void Node::LogRead(bitset<4> const &errorbits)
 {
     string out;
     OutFile.open("output.txt", std::ios_base::app);
+    //ya2ma ykoon el processing el by5ls fl mosta2bal with respect to now 
+    //or we had long got past the last processing time.
+    //this is why we get max
     double now = simTime().dbl() >= PreviousPT ? simTime().dbl() : PreviousPT;
     out = "At time [";
     OutFile.precision(1);
@@ -168,7 +171,7 @@ void Node::ReadFile()
 
     while (getline(DataFile, temp))
     {
-        err = temp.substr(0, 4); // start at 0 and get 4 chars
+        err = temp.substr(0, 4); // start at 0 and get 4 chars 0->3
         bitset<4> errorbits = bitset<4>(err);
         msg = temp.substr(5); // start at 5 and get the rest (not 4 because of the whitespace )
         Messages.push_back(msg);
